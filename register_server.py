@@ -17,9 +17,6 @@ dynamodb = boto3.resource('dynamodb')
 # DynamoDB의 users 테이블을 선택합니다
 table = dynamodb.Table('users')
 
-# Flask-Mail 객체를 생성합니다
-mail = Mail(app)
-
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT')
 
@@ -29,6 +26,9 @@ app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS')  # TLS 사용 여부
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')  # 이메일 계정의 사용자 이름
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # 이메일 계정의 비밀번호
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')  # 기본 발신자 이메일 주소
+
+# Flask-Mail 객체를 생성
+mail = Mail(app)
 
 # URLSafeTimedSerializer 객체를 생성합니다. 이 객체는 안전한 URL을 생성하고 확인하는 데 사용됩니다
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -60,6 +60,11 @@ def register():
     nickname = request.form.get('nickname')
     f_code = request.form.get('f_code')
 
+    # 이메일 중복 확인을 합니다 
+    response = table.scan(FilterExpression=Attr('email').eq(email))
+    if 'Items' in response and len(response['Items']) > 0:
+        return {"message": "Email already exists."}, 409
+
     # 닉네임 중복 확인을 합니다
     response = table.scan(FilterExpression=Attr('nickname').eq(nickname))
     if 'Items' in response and len(response['Items']) > 0:
@@ -90,8 +95,6 @@ def register():
         return {"message": "User registered successfully. Please confirm your email."}, 200
     except ClientError as e:
         if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-            return {"message": "Email already exists."}, 409
-        else:
             return {"message": "An error occurred."}, 500
 
 # 이메일 인증을 처리하는 엔드포인트입니다

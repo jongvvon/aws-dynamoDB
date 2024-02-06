@@ -85,7 +85,7 @@ while True:
     command = input("명령어를 입력해주세요 (g: 테이블 선택, p: 항목 삽입, r: 항목 조회, u: 항목 업데이트, d: 테이블 삭제, q: 종료): ")
 
     if command == 'g':
-        table = get_table(dynamodb)
+        table = get_or_create_table(dynamodb)
     elif command == 'p':
         if 'table' in locals():
             put_item(table)
