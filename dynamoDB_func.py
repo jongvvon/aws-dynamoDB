@@ -12,6 +12,13 @@ def create_table(dynamodb):
     table_name = input("테이블 이름을 입력해주세요: ")
     primary_key = input("기본 키 이름을 입력해주세요: ")
 
+    try:
+        response = dynamodb_client.describe_table(TableName=table_name)
+        print('이미 존재하는 테이블 이름입니다. 다른 이름을 입력해주세요.')
+        return
+    except ClientError:
+        pass
+
     table = dynamodb.create_table(
                 TableName=table_name,
                 KeySchema=[
@@ -71,13 +78,16 @@ def scan_table(table):
 def get_item(table, key):
     item_key = input("조회할 항목 키 값을 입력해주세요: ")
 
-    response = table.get_item(
-        Key={
-            key: item_key
-        }
-    )
-    item = response['Item']
-    print("조회된 항목:", json.dumps(item, indent=4))
+    try:
+        response = table.get_item(
+            Key={
+                key: item_key
+            }
+        )
+        item = response['Item']
+        print("조회된 항목:", json.dumps(item, indent=4))
+    except ClientError:
+        print('항목 키 값을 확인해주세요')
 
 # 사용자로부터 항목의 키와 새 값을 입력받아 해당 항목을 테이블에서 업데이트하는 함수입니다.
 def update_item(table, key):
@@ -89,14 +99,13 @@ def update_item(table, key):
         Key={
             key: item_key
         },
-        #DynamoDB에서는 특정 단어들을 예약어로 간주하며, 이들은 속성 이름으로 사용할 수 없습니다. 오류 메시지에서 볼 수 있듯이, 'value'는 DynamoDB의 예약어 중 하나입니다.
-        #이 문제를 해결하려면 ExpressionAttributeNames 매개변수를 사용하여 속성 이름을 대체해야 합니다. 예를 들어, 'value' 대신 '#v'를 사용하려면 다음과 같이 코드를 수정할 수 있습니다:
         UpdateExpression=f'SET {property_key} = :val',
         ExpressionAttributeValues={
             ':val': item_value
         }
     )
 
+# 테이블 내부의 아이템을 삭제하는 함수입니다.
 def delete_item(table, key):
     item_key = input("삭제할 항목 키 값을 입력해주세요: ")
 
@@ -134,8 +143,7 @@ q: 종료
         get_table_list()
 
     elif command == 'c':
-        if 'table' in locals():
-            create_table(table)
+        create_table(table)
 
     elif command == 's':
         if 'table' in locals():
