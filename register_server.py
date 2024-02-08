@@ -113,7 +113,7 @@ def confirm_email(token):
         ExpressionAttributeValues={':val': True}
     )
     
-    return {"message": "Email confirmed successfully."}, 200
+    return render_template('confirm.html', message="Email confirmed successfully."), 200
 
 # 로그인을 처리하는 엔드포인트입니다
 @app.route('/login', methods=['POST'])
